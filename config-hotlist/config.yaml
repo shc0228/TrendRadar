@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════
-#                    TrendRadar 配置文件
+#                    TrendRadar 配置文件 - 热榜实例
 #                      Version: 1.1.0
 # ═══════════════════════════════════════════════════════════════
 
@@ -70,7 +70,7 @@ platforms:
 # max_age_days: 可选，覆盖全局 freshness_filter.max_age_days
 # ===============================================================
 rss:
-  enabled: true                       # 是否启用 RSS 抓取
+  enabled: true                      # 热榜实例：禁用 RSS 抓取
 
   # 文章新鲜度过滤配置（全局默认值）
   # 过滤掉发布时间超过指定天数的旧文章，避免同一篇文章重复出现在推送中
@@ -111,76 +111,7 @@ rss:
       # enabled: false                  # 禁用
 # ===============================================================
 # 常用学术期刊 RSS 源
-  # ECON top 5
-    - id: "aea"
-      name: "AEA"
-      url: "https://www.aeaweb.org/research/rss-feed"
-
-    - id: "econometrica"
-      name: "Econometrica"
-      url: "https://onlinelibrary.wiley.com/feed/14680262/most-recent"
-
-    - id: "jpe"
-      name: "JPE"
-      url: "https://www.journals.uchicago.edu/action/showFeed?type=etoc&feed=rss&jc=jpe"
-
-    - id: "qje"
-      name: "QJE"
-      url: "https://academic.oup.com/rss/site_5504/advanceAccess_3365.xml"
-
-    - id: "res"
-      name: "RES"
-      url: "https://academic.oup.com/rss/site_5508/advanceAccess_3369.xml"
-
-  # IS    
-    - id: "isr"
-      name: "ISR"
-      url: "https://pubsonline.informs.org/action/showFeed?type=etoc&feed=rss&jc=isre"
-      max_age_days: 3 
-
-    - id: "misq"
-      name: "MISQ"
-      url: "http://aisel.aisnet.org/misq/recent.rss"
-
-    - id: "mnsc"
-      name: "Management Science"
-      url: "https://pubsonline.informs.org/action/showFeed?type=etoc&feed=rss&jc=mnsc"
-
-  # HBS and MIT
-    - id: "hbs"
-      name: "HBS Review"
-      url: "http://feeds.hbr.org/harvardbusiness" 
-
-    - id: "mitsmr"
-      name: "MIT SMR" 
-      url: "http://feeds.feedburner.com/mitsmr"
-  # Marketing    
-
-    - id: "jcr"
-      name: "JCR"
-      url: "https://consumerresearcher.com/feed" 
-
-    - id: "jmr"
-      name: "JMR"
-      url: "https://journals.sagepub.com/action/showFeed?ui=0&mi=ehikzz&ai=2b4&jc=mrja&type=axatoc&feed=rss"   
-
-    - id: "mksc"
-      name: "Marketing Science"
-      url: "https://pubsonline.informs.org/action/showFeed?type=etoc&feed=rss&jc=mksc"
-
-    - id: "jcp"
-      name: "JCP"
-      url: "https://myscp.onlinelibrary.wiley.com/action/showFeed?type=etoc&feed=rss&jc=15327663" 
-
-  # Finance       
-
-    - id: "jf"
-      name: "JF"
-      url: "https://onlinelibrary.wiley.com/feed/15406261/most-recent"       
-
-    - id: "jfe"
-      name: "JFE"
-      url: "https://rss.sciencedirect.com/publication/science/0304405X"        
+              
 
     # 自定义源示例
     # - id: "custom-feed"
@@ -209,7 +140,7 @@ rss:
 #    • 适用场景：避免重复信息干扰
 # ===============================================================
 report:
-  mode: "daily"                      # 可选: daily | current | incremental
+  mode: "incremental"                # 可选: daily | current | incremental
   display_mode: "keyword"             # 分组维度: keyword | platform
                                       # keyword: 按关键词分组显示（默认）
                                       # platform: 按平台/来源分组显示
@@ -308,7 +239,7 @@ notification:
   push_window:
     enabled: true                     # 是否启用推送时间窗口控制
     start: "08:00"                    # 开始时间（北京时间）- 早上8点开始推送
-    end: "23:59"                      # 结束时间（北京时间）- 晚上11:59结束
+    end: "24:00"                      # 结束时间（北京时间）- 晚上11:59结束
     once_per_day: false               # true=窗口内只推送一次，false=窗口内每次执行都推送（每小时）
 
   # 推送渠道配置

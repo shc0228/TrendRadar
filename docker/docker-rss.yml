@@ -1,0 +1,32 @@
+services:
+  trendradar-rss:
+    image: wantcat/trendradar:latest
+    container_name: trendradar-rss
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:${WEBSERVER_PORT_RSS:-8082}:${WEBSERVER_PORT_RSS:-8082}"
+
+    volumes:
+      - ../config-rss:/app/config:ro
+      - ../output-rss:/app/output
+
+    environment:
+      - TZ=Asia/Shanghai
+      - ENABLE_WEBSERVER=${ENABLE_WEBSERVER_RSS:-false}
+      - WEBSERVER_PORT=${WEBSERVER_PORT_RSS:-8082}
+      - WEWORK_WEBHOOK_URL=${WEWORK_WEBHOOK_URL_RSS}
+      - WEWORK_MSG_TYPE=markdown
+      - AI_ANALYSIS_ENABLED=${AI_ANALYSIS_ENABLED_RSS:-false}
+      - AI_API_KEY=${AI_API_KEY}
+      - AI_MODEL=${AI_MODEL}
+      - AI_API_BASE=${AI_API_BASE}
+      - CRON_SCHEDULE=${CRON_SCHEDULE_RSS:-0 9 * * *}
+      - RUN_MODE=cron
+      - IMMEDIATE_RUN=true
+      - ENABLE_CRAWLER=false
+      - EMAIL_FROM=${EMAIL_FROM_RSS}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD_RSS}
+      - EMAIL_TO=${EMAIL_TO_RSS}
+      - EMAIL_SMTP_SERVER=${EMAIL_SMTP_SERVER:-smtp.gmail.com}
+      - EMAIL_SMTP_PORT=${EMAIL_SMTP_PORT:-587}

@@ -741,7 +741,7 @@ def render_html_content(
                     <button class="save-btn" onclick="saveAsImage()">保存为图片</button>
                     <button class="save-btn" onclick="saveAsMultipleImages()">分段保存</button>
                 </div>
-                <div class="header-title">热点新闻分析</div>
+                <div class="header-title">今日文章</div>
                 <div class="header-info">
                     <div class="info-item">
                         <span class="info-label">报告类型</span>
@@ -758,7 +758,7 @@ def render_html_content(
     html += """</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">新闻总数</span>
+                        <span class="info-label">文章总数</span>
                         <span class="info-value">"""
 
     html += f"{total_titles} 条"
@@ -1367,10 +1367,8 @@ def render_html_content(
 
             <div class="footer">
                 <div class="footer-content">
-                    由 <span class="project-name">TrendRadar</span> 生成 ·
-                    <a href="https://github.com/sansan0/TrendRadar" target="_blank" class="footer-link">
-                        GitHub 开源项目
-                    </a>"""
+                    由 <span class="project-name">SHC with TrendRadar</span> 生成 ·
+                    """
 
     if update_info:
         html += f"""
