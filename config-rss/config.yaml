@@ -273,7 +273,7 @@ notification:
     email:
       from: ""                        # 发件人邮箱地址
       password: ""                    # 发件人邮箱密码或授权码
-      to: "hongchuanshen@gmail.com, songjie@link.cuhk.edu.hk, ivydang@hku.hk"  # 收件人邮箱，多个用逗号分隔
+      to: ""  # 收件人邮箱，多个用逗号分隔
       smtp_server: ""                 # SMTP 服务器（可选，留空自动识别）
       smtp_port: ""                   # SMTP 端口（可选，留空自动识别）
 
