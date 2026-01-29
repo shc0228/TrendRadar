@@ -392,10 +392,7 @@ def render_rss_html_content(
 
             <div class="footer">
                 <div class="footer-content">
-                    由 <span class="project-name">TrendRadar</span> 生成 ·
-                    <a href="https://github.com/sansan0/TrendRadar" target="_blank" class="footer-link">
-                        GitHub 开源项目
-                    </a>
+                    由 <span class="project-name">SHC with TrendRadar</span> 生成 ·                    
                 </div>
             </div>
         </div>

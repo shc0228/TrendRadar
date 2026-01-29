@@ -32,28 +32,32 @@ app:
 platforms:
   enabled: true                         # 是否启用热榜平台抓取
   sources:
-    - id: "toutiao"
-      name: "今日头条"
-    - id: "baidu"
-      name: "百度热搜"
     - id: "wallstreetcn-hot"
       name: "华尔街见闻"
     - id: "thepaper"
       name: "澎湃新闻"
-    - id: "bilibili-hot-search"
-      name: "bilibili 热搜"
     - id: "cls-hot"
       name: "财联社热门"
     - id: "ifeng"
       name: "凤凰网"
-    - id: "tieba"
-      name: "贴吧"
     - id: "weibo"
       name: "微博"
-    - id: "douyin"
-      name: "抖音"
-    - id: "zhihu"
-      name: "知乎"
+    - id: "sputniknewscn"
+      name: "卫星通讯社"
+    - id: "zaobao"
+      name: "联合早报"
+    - id: "mktnews"
+      name: "MKT新闻"
+    - id: "juejin"
+      name: "掘金"
+    - id: "github"
+      name: "GitHub"
+    - id: "hackernews"
+      name: "Hacker News"
+    - id: "sspai"
+      name: "少数派"
+    - id: "producthunt"
+      name: "ProductHunt"
 
 
 
@@ -90,20 +94,93 @@ rss:
   # - 正整数：覆盖全局设置，只推送此天数内的文章
   # - 0：禁用此频道的新鲜度过滤，推送所有文章
   feeds:
-    - id: "hacker-news"
-      name: "Hacker News"
-      url: "https://hnrss.org/frontpage"
-      # max_age_days: 1               # 示例：只推送1天内的文章
+    - id: "nytimes"
+      name: "NY Times"
+      url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"
+      max_age_days: 1               # 示例：只推送1天内的文章
 
-    - id: "ruanyifeng"
-      name: "阮一峰的网络日志"
-      url: "http://www.ruanyifeng.com/blog/atom.xml"
-      # max_age_days: 7               # 示例：推送7天内的文章（更新较慢的博客）
+    - id: "cnn-news"
+      name: "CNN"
+      url: "http://rss.cnn.com/rss/edition.rss"
+      max_age_days: 1               # 示例：推送7天内的文章（更新较慢的博客）
     
     - id: "yahoo-finance"
       name: "雅虎财经"
       url: "https://finance.yahoo.com/news/rssindex"
-      enabled: false                  # 禁用
+      max_age_days: 1 
+      # enabled: false                  # 禁用
+# ===============================================================
+# 常用学术期刊 RSS 源
+  # ECON top 5
+    - id: "aea"
+      name: "AEA"
+      url: "https://www.aeaweb.org/research/rss-feed"
+
+    - id: "econometrica"
+      name: "Econometrica"
+      url: "https://onlinelibrary.wiley.com/feed/14680262/most-recent"
+
+    - id: "jpe"
+      name: "JPE"
+      url: "https://www.journals.uchicago.edu/action/showFeed?type=etoc&feed=rss&jc=jpe"
+
+    - id: "qje"
+      name: "QJE"
+      url: "https://academic.oup.com/rss/site_5504/advanceAccess_3365.xml"
+
+    - id: "res"
+      name: "RES"
+      url: "https://academic.oup.com/rss/site_5508/advanceAccess_3369.xml"
+
+  # IS    
+    - id: "isr"
+      name: "ISR"
+      url: "https://pubsonline.informs.org/action/showFeed?type=etoc&feed=rss&jc=isre"
+      max_age_days: 3 
+
+    - id: "misq"
+      name: "MISQ"
+      url: "http://aisel.aisnet.org/misq/recent.rss"
+
+    - id: "mnsc"
+      name: "Management Science"
+      url: "https://pubsonline.informs.org/action/showFeed?type=etoc&feed=rss&jc=mnsc"
+
+  # HBS and MIT
+    - id: "hbs"
+      name: "HBS Review"
+      url: "http://feeds.hbr.org/harvardbusiness" 
+
+    - id: "mitsmr"
+      name: "MIT SMR" 
+      url: "http://feeds.feedburner.com/mitsmr"
+  # Marketing    
+
+    - id: "jcr"
+      name: "JCR"
+      url: "https://consumerresearcher.com/feed" 
+
+    - id: "jmr"
+      name: "JMR"
+      url: "https://journals.sagepub.com/action/showFeed?ui=0&mi=ehikzz&ai=2b4&jc=mrja&type=axatoc&feed=rss"   
+
+    - id: "mksc"
+      name: "Marketing Science"
+      url: "https://pubsonline.informs.org/action/showFeed?type=etoc&feed=rss&jc=mksc"
+
+    - id: "jcp"
+      name: "JCP"
+      url: "https://myscp.onlinelibrary.wiley.com/action/showFeed?type=etoc&feed=rss&jc=15327663" 
+
+  # Finance       
+
+    - id: "jf"
+      name: "JF"
+      url: "https://onlinelibrary.wiley.com/feed/15406261/most-recent"       
+
+    - id: "jfe"
+      name: "JFE"
+      url: "https://rss.sciencedirect.com/publication/science/0304405X"        
 
     # 自定义源示例
     # - id: "custom-feed"
@@ -132,7 +209,7 @@ rss:
 #    • 适用场景：避免重复信息干扰
 # ===============================================================
 report:
-  mode: "current"                     # 可选: daily | current | incremental
+  mode: "daily"                      # 可选: daily | current | incremental
   display_mode: "keyword"             # 分组维度: keyword | platform
                                       # keyword: 按关键词分组显示（默认）
                                       # platform: 按平台/来源分组显示
@@ -229,10 +306,10 @@ notification:
   #   执行时间不稳定，时间范围建议至少留足 2 小时
   # 💡 想要精准定时？建议使用 Docker 部署在个人服务器上
   push_window:
-    enabled: false                    # 是否启用推送时间窗口控制
-    start: "20:00"                    # 开始时间（北京时间）
-    end: "22:00"                      # 结束时间（北京时间）
-    once_per_day: true                # true=窗口内只推送一次，false=窗口内每次执行都推送
+    enabled: true                     # 是否启用推送时间窗口控制
+    start: "08:00"                    # 开始时间（北京时间）- 早上8点开始推送
+    end: "23:59"                      # 结束时间（北京时间）- 晚上11:59结束
+    once_per_day: false               # true=窗口内只推送一次，false=窗口内每次执行都推送（每小时）
 
   # 推送渠道配置
   channels:

@@ -1,0 +1,38 @@
+services:
+  trendradar-hotlist:
+    image: wantcat/trendradar:latest
+    container_name: trendradar-hotlist
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:${WEBSERVER_PORT_HOTLIST:-8081}:${WEBSERVER_PORT_HOTLIST:-8081}"
+
+    volumes:
+      - ../config-hotlist:/app/config:ro
+      - ../output-hotlist:/app/output
+
+    environment:
+      - TZ=Asia/Shanghai
+      - ENABLE_WEBSERVER=${ENABLE_WEBSERVER_HOTLIST:-false}
+      - WEBSERVER_PORT=${WEBSERVER_PORT_HOTLIST:-8081}
+      - WEWORK_WEBHOOK_URL=${WEWORK_WEBHOOK_URL_HOTLIST}
+      - WEWORK_MSG_TYPE=markdown
+      - AI_ANALYSIS_ENABLED=${AI_ANALYSIS_ENABLED_HOTLIST:-false}
+      - AI_API_KEY=${AI_API_KEY}
+      - AI_MODEL=${AI_MODEL}
+      - AI_API_BASE=${AI_API_BASE}
+      - CRON_SCHEDULE=${CRON_SCHEDULE_HOTLIST:-0 */3 * * *}
+      - RUN_MODE=cron
+      - IMMEDIATE_RUN=true
+
+  trendradar-mcp:
+    image: wantcat/trendradar-mcp:latest
+    container_name: trendradar-mcp
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3333:3333"
+    volumes:
+      - ../config:/app/config:ro
+      - ../output:/app/output
+    environment:
+      - TZ=Asia/Shanghai
