@@ -41,3 +41,4 @@ uv.lock
 *.tmp
 *.log
 *.bak
+docker/.env
