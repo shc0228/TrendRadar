@@ -1,0 +1,20 @@
+{
+  "https://pubsonline.informs.org/doi/abs/10.1287/isre.2024.1313?af=R": {
+    "title": "The Economics of Password Sharing",
+    "success": true,
+    "content": "Password sharing has been commonly observed across various subscription-based industries, including the notable streaming service from Netflix. Although sharing helps save on payments, it incurs a sharing cost for consumers, including possible privacy concerns. We develop a game-theoretic model in which a firm faces two consumer segments—password sharers and nonsharers—to examine the effect of password sharing. We find that password sharing allows sharers to self-bundle and subscribe based on their aggregated valuation, reducing the heterogeneity in their valuations. Furthermore, it introduces implicit price discrimination by allowing sharers to self-select between sharing and not sharing under a single uniform price. These two effects can benefit the firm, but only when the sharing cost, a burden to consumers and thus to the firm, is low. Meanwhile, password sharing reshapes the segment disparity between sharers and nonsharers. A greater nonsharer valuation premium reduces the disparity and makes the firm more likely to benefit from password sharing. Together, compared with the scenario in which consumers cannot share passwords, password sharing benefits the firm when the sharing cost is low and the valuation premium of nonsharers is not too small. Surprisingly, password sharing reduces social welfare and consumer surplus in a large space, especially when the sharing cost is neither too low nor too high. Under the firm's optimal password-sharing choice, although a win-win outcome arises under certain conditions, the firm's choice (especially of password-sharing accommodation) might hurt social welfare and consumer surplus, demanding social planners' intervention.",
+    "url": "https://pubsonline.informs.org/doi/abs/10.1287/isre.2024.1313?af=R"
+  },
+  "https://hbr.org/2026/01/for-your-360-degree-feedback-to-be-effective-you-need-to-discuss-it": {
+    "title": "For Your 360-Degree Feedback to Be Effective, You Need to Discuss It",
+    "success": true,
+    "content": "360-degree feedback alone does not improve leadership effectiveness. Meaningful change will only happen if you engage directly with your colleagues to learn more about what you could do better. How do you have these conversations? Start by expressing gratitude to feedback providers. Ensure you move beyond your assumptions and approach them with curiosity. Then engage in candid conversation, sharing your takeaways, asking questions that prompt explanation not justification, focusing on impact not intent, listening without committing, and avoiding defensiveness. Finally, maintain an ongoing dialogue about the actions you intend to take and your progress.",
+    "url": "https://hbr.org/2026/01/for-your-360-degree-feedback-to-be-effective-you-need-to-discuss-it"
+  },
+  "https://sloanreview.mit.edu/article/can-customers-find-your-brand-marketing-strategies-for-ai-driven-search/": {
+    "title": "Can Customers Find Your Brand? Marketing Strategies for AI-Driven Search",
+    "success": true,
+    "content": "As AI platforms transform how consumers search, brands that don't adapt risk becoming invisible to potential customers.",
+    "url": "https://sloanreview.mit.edu/article/can-customers-find-your-brand-marketing-strategies-for-ai-driven-search/"
+  }
+}

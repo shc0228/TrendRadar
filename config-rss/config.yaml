@@ -172,7 +172,7 @@ rss:
 #    • 适用场景：避免重复信息干扰
 # ===============================================================
 report:
-  mode: "incremental"                # 可选: daily | current | incremental
+  mode: "daily"                       # 可选: daily | current | incremental
   display_mode: "platform"            # RSS实例：按RSS来源分组显示
 
   # 关键词组排序方式（仅 display_mode: keyword 时生效）
