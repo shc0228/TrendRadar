@@ -1,0 +1,131 @@
+# AI学术文章摘要与邮件推送系统配置文件
+
+# 监控配置
+monitor:
+  # 监控目录路径
+  watch_dir: "E:\\claude code projects\\trendradar\\output-rss\\html"
+  # 检查间隔（秒）
+  check_interval: 300
+  # 已处理文件记录数据库
+  processed_files_db: "processed_files.json"
+
+# 输出配置
+output:
+  # 输出目录
+  dir: "output"
+  # 模板目录（可选）
+  template_dir: "templates"
+
+# Chrome DevTools MCP配置
+browser:
+  # 页面加载超时（毫秒）
+  timeout: 30000
+  # 等待内容加载时间（毫秒）
+  wait_for_content: 2000
+  # 是否使用Playwright（用于INFORMS等需要真实浏览器的网站）
+  use_playwright: true
+  # Playwright是否使用headless模式（无界面）
+  headless: true
+
+# 官方API配置（优先使用）
+apis:
+  # arXiv API（完全免费，无需注册）
+  arxiv:
+    enabled: true
+    base_url: "http://export.arxiv.org/api/query"
+
+  # Springer Nature API
+  springer:
+    enabled: true
+    api_key: ""  # Open Access内容不需要API key
+    open_access_only: true  # 仅访问开放获取内容
+
+  # Elsevier/ScienceDirect API（需要API Key，建议申请TDM License）
+  # 申请地址: https://www.elsevier.com/about/policies-and-standards/text-and-data-mining/license
+  elsavier:
+    enabled: true
+    api_key: "2cd9ec332e4e42f5d67fdda4d40d5bfe"  # Elsevier API Key
+    tdm_license: ""  # TDM License（可选，用于获取全文）
+
+  # PubMed API（完全免费）
+  pubmed:
+    enabled: false
+    base_url: "https://ncbi.nlm.nih.gov/pmc/oai/oai.cgi"
+    email: ""  # OAI协议要求提供邮箱
+
+# API优先级配置
+api_priority:
+  enabled: true  # 是否启用API优先
+  fallback_to_browser: true  # API失败时是否回退到浏览器
+  on_captcha: "skip"  # 遇到CAPTCHA时的处理: skip(跳过), manual(人工处理)
+
+# AI配置 (qwen-max)
+ai:
+  # 模型名称
+  model: "qwen-max"
+  # API密钥（留空则从环境变量DASHSCOPE_API_KEY读取）
+  api_key: "sk-bf43da8bebea465b9012bb07915edd6c"
+  # API地址
+  api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  # 请求超时（秒）
+  timeout: 120
+  # 最大输出token数
+  max_tokens: 2000
+  # 温度参数
+  temperature: 0.7
+
+  # 摘要prompt模板
+  summary_prompt: |
+    请分析以下学术论文文章，提供结构化摘要（中文）：
+
+    标题：{title}
+    内容：{content}
+
+    请按以下格式输出：
+    ## 文章概要
+    （用两句话概括文章的核心内容）
+
+    ## 研究问题
+    （简要描述文章要解决的核心问题）
+
+    ## 研究方法
+    （描述文章使用的研究方法、数据来源、分析方法等）
+
+    ## 主要发现
+    （列出文章的主要研究发现，每条用•开头）
+
+# 邮件配置
+email:
+  # 发件人邮箱
+  from: "shc2508@163.com"
+  # 邮箱密码或授权码
+  password: "QKaHY6nuefJZhk9E"
+  # 收件人邮箱（多个用逗号分隔）
+  to: "hongchuanshen@gmail.com"
+  # SMTP服务器地址
+  smtp_server: "smtp.163.com"
+  # SMTP端口（587为STARTTLS，465为SSL）
+  smtp_port: 465
+  # 邮件主题前缀
+  subject_prefix: "[AI学术摘要]"
+
+# 常用邮箱SMTP配置参考:
+#
+# Gmail:
+#   smtp_server: smtp.gmail.com
+#   smtp_port: 587
+#   需要使用应用专用密码: https://support.google.com/accounts/answer/185833
+#
+# QQ邮箱:
+#   smtp_server: smtp.qq.com
+#   smtp_port: 587
+#   需要开启SMTP服务并使用授权码
+#
+# 163邮箱:
+#   smtp_server: smtp.163.com
+#   smtp_port: 465
+#   需要开启SMTP服务并使用授权码
+#
+# Outlook/Hotmail:
+#   smtp_server: smtp-mail.outlook.com
+#   smtp_port: 587

@@ -1,0 +1,29 @@
+# Web框架 - HTML解析
+beautifulsoup4>=4.12.0
+lxml>=5.0.0
+
+# HTTP请求
+requests>=2.31.0
+
+# 浏览器自动化 - Playwright
+playwright>=1.40.0
+
+# Chrome DevTools MCP (已安装，用于参考)
+# mcp>=1.0.0
+
+# AI模型 - OpenAI兼容API
+openai>=1.0.0
+
+# 文件监控
+watchdog>=4.0.0
+
+# 定时任务
+schedule>=1.2.0
+
+# 配置管理
+pyyaml>=6.0
+
+# 邮件发送（内置smtplib，无需额外依赖）
+
+# Jinja2模板（可选，当前使用内置模板）
+# jinja2>=3.1.0
