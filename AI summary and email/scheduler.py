@@ -159,14 +159,15 @@ def is_processed(file_path: str, config: dict) -> bool:
 
 
 def get_todays_html_files(watch_dir: Path) -> list[Path]:
-    """获取今天生成的HTML文件"""
+    """获取今天生成的HTML文件（递归查找子目录）"""
     today = datetime.now().date()
     yesterday = today - timedelta(days=1)
 
     html_files = []
 
     if watch_dir.exists():
-        for file in watch_dir.glob('*.html'):
+        # 递归查找所有HTML文件
+        for file in watch_dir.rglob('*.html'):
             # 获取文件修改时间
             mod_time = datetime.fromtimestamp(file.stat().st_mtime).date()
 
