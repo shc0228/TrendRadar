@@ -101,7 +101,11 @@ email:
   # 邮箱密码或授权码
   password: "QKaHY6nuefJZhk9E"
   # 收件人邮箱（多个用逗号分隔）
-  to: "hongchuanshen@gmail.com"
+  to:
+    - "hongchuanshen@gmail.com"
+    - "songjie@link.cuhk.edu.hk"
+    - "ivychudang@gmail.com"
+    - "profmikezhang@163.com"
   # SMTP服务器地址
   smtp_server: "smtp.163.com"
   # SMTP端口（587为STARTTLS，465为SSL）
@@ -129,3 +133,16 @@ email:
 # Outlook/Hotmail:
 #   smtp_server: smtp-mail.outlook.com
 #   smtp_port: 587
+
+# 文章过滤配置
+filter:
+  # JFE文章黑名单 - 每天重复出现的文章，将被自动过滤
+  jfe_blacklist:
+    - "Dual peer effects and cross-stock predictability"
+    - "Market feedback: Evidence from the horse's mouth"
+    - "Innovation spillovers across U.S. tech clusters"
+    - "Liquidity characteristics of market anomalies and institutional trading"
+    - "Intervening against the Fed"
+    - "Partial homeownership: A quantitative analysis"
+    - "Which investors drive anomaly returns and how?"
+    - "Editorial Board"

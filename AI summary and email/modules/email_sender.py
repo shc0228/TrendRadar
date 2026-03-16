@@ -26,10 +26,17 @@ class EmailSender:
             with open(html_file_path, 'r', encoding='utf-8') as f:
                 html_content = f.read()
 
+            # 处理收件人列表
+            to_recipients = self.config['to']
+            if isinstance(to_recipients, list):
+                to_recipients_str = ', '.join(to_recipients)
+            else:
+                to_recipients_str = to_recipients
+
             # 创建邮件
             msg = MIMEMultipart('alternative')
             msg['From'] = formataddr(("TrendRadar AI", self.config['from']))
-            msg['To'] = self.config['to']
+            msg['To'] = to_recipients_str
             subject_prefix = self.config.get('subject_prefix', '[AI摘要]')
             msg['Subject'] = f"{subject_prefix} - {report_type}"
 
@@ -53,7 +60,7 @@ class EmailSender:
                     server.login(self.config['from'], self.config['password'])
                     server.send_message(msg)
 
-            print(f"[OK] 邮件发送成功 -> {self.config['to']}")
+            print(f"[OK] 邮件发送成功 -> {to_recipients_str}")
             return True
 
         except Exception as e:
