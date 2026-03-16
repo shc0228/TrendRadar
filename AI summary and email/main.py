@@ -26,7 +26,7 @@ class SummaryProcessor:
 
     def __init__(self, config: Dict):
         self.config = config
-        self.parser = HTMLParser()
+        self.parser = HTMLParser(config)
         self.browser = BrowserAutomation(config)
         self.summarizer = AISummarizer(config)
         self.generator = HTMLGenerator(config)
