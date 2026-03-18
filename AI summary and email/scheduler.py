@@ -36,7 +36,7 @@ async def process_file(file_path: str, config: dict):
     print(f"{'='*60}")
 
     # 初始化组件
-    parser = HTMLParser()
+    parser = HTMLParser(config)
     browser = BrowserAutomation(config)
     summarizer = AISummarizer(config)
     generator = HTMLGenerator(config)
