@@ -190,7 +190,7 @@ async def process_articles_from_html(html_file: str, mcp_fetched_contents: Dict[
     print(f"{'='*60}")
 
     # 1. 解析HTML
-    parser = HTMLParser()
+    parser = HTMLParser(config)
     articles = parser.parse_file(html_file)
     print(f"找到 {len(articles)} 篇文章")
 
@@ -235,7 +235,7 @@ MCP_WORKFLOW_INSTRUCTIONS = """
 ```python
 from modules.html_parser import HTMLParser
 
-parser = HTMLParser()
+parser = HTMLParser(config)
 articles = parser.parse_file("path/to/html/file")
 urls = [a.url for a in articles]
 print(urls)
