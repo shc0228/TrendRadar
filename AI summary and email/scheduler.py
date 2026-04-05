@@ -43,6 +43,7 @@ async def process_file(file_path: str, config: dict):
 
     # 1. 解析HTML
     print("Parsing HTML...")
+    parser.update_dynamic_blacklist(file_path)
     articles = parser.parse_file(file_path)
     print(f"   Found {len(articles)} articles")
 

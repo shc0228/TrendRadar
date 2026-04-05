@@ -30,13 +30,14 @@ async def process_file(file_path: str, config: dict):
     print(f"{'='*60}")
 
     # Initialize components
-    parser = HTMLParser()
+    parser = HTMLParser(config)
     browser = BrowserAutomation(config)
     summarizer = AISummarizer(config)
     generator = HTMLGenerator(config)
 
     # 1. Parse HTML
     print("Parsing HTML...")
+    parser.update_dynamic_blacklist(file_path)
     articles = parser.parse_file(file_path)
     print(f"   Found {len(articles)} articles")
 

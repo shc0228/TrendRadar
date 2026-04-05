@@ -74,6 +74,7 @@ class SummaryProcessor:
 
             # 1. 解析HTML，获取文章列表
             print("🔍 解析HTML文件...")
+            self.parser.update_dynamic_blacklist(file_path)
             articles = self.parser.parse_file(file_path)
             print(f"   找到 {len(articles)} 篇文章")
 
