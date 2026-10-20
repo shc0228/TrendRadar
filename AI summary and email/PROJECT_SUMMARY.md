@@ -268,14 +268,14 @@ async def fetch_articles_concurrent(urls):
 ### 必需配置
 
 ```yaml
-# config.yaml
+# config.yaml（密钥不再写入此文件，统一放在本地 .env）
 ai:
-  api_key: "REMOVED-SECRET"  # ✓ 已配置
-  model: "qwen-max"
+  api_key: ""  # 从 .env 的 KIMI_API_KEY 读取
+  model: "kimi-k3"
 
 email:
   from: "shc2508@163.com"           # ✓ 已配置
-  password: "REMOVED-SECRET"        # ✓ 已配置
+  password: ""                       # 从 .env 的 SMTP_PASSWORD 读取
   to: "hongchuanshen@gmail.com"      # ✓ 已配置
   smtp_server: "smtp.163.com"        # ✓ 已配置
   smtp_port: 465                     # ✓ 已配置
