@@ -127,36 +127,60 @@ class HTMLGenerator:
             color: #dc3545;
             font-style: italic;
         }
+        .section-header {
+            font-size: 15px;
+            font-weight: 600;
+            color: #555;
+            margin: 20px 0 12px 0;
+            padding: 8px 12px;
+            background: #f0f2f5;
+            border-radius: 4px;
+            border-left: 3px solid #667eea;
+        }
+        .article.academic {
+            border-left-color: #667eea;
+        }
+        .article.non-academic {
+            border-left-color: #10b981;
+        }
+        .article.minimal {
+            padding: 10px 14px;
+            opacity: 0.85;
+        }
+        .article.minimal .article-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin: 0;
+        }
+        .article-authors {
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 6px;
+            line-height: 1.5;
+        }
+        .article-abstract {
+            font-size: 12px;
+            color: #444;
+            margin-bottom: 10px;
+            line-height: 1.5;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 2px solid #ddd;
+        }
+        .abstract-text {
+            color: #555;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📚 AI学术文章摘要</h1>
+            <h1>AI学术文章摘要</h1>
             <div class="meta">{{ date_str }} | {{ articles|length }} 篇文章</div>
         </div>
 
         <div class="content">
-            {% for article in articles %}
-            <div class="article">
-                <h2 class="article-title">
-                    <a href="{{ article.url }}" target="_blank">{{ loop.index }}. {{ article.title }}</a>
-                </h2>
-                <div class="article-meta">
-                    {% if article.author %}{{ article.author }} | {% endif %}
-                    <a href="{{ article.url }}" target="_blank">查看原文</a>
-                </div>
-                {% if article.summary %}
-                <div class="summary-section">
-                    <div class="summary-content">{{ article.summary }}</div>
-                </div>
-                {% else %}
-                <div class="summary-section">
-                    <div class="summary-content error-message">摘要生成中或失败，请稍后查看</div>
-                </div>
-                {% endif %}
-            </div>
-            {% endfor %}
         </div>
 
         <div class="footer">
@@ -172,13 +196,35 @@ class HTMLGenerator:
         now = datetime.now()
         date_str = now.strftime('%Y-%m-%d %H:%M')
 
+        # 排序：学术期刊优先，HBS/MIT放最后
+        sorted_articles = self._sort_articles(articles)
+
         # Simple template rendering without Jinja2 dependency
         html_content = self._render_template(
             date_str=date_str,
-            articles=articles
+            articles=sorted_articles
         )
 
         return html_content
+
+    def _sort_articles(self, articles: List[Article]) -> List[Article]:
+        """排序文章：学术期刊在前，HBS/MIT在后"""
+        academic = []
+        non_academic = []
+
+        for article in articles:
+            source = (article.author or '').strip()
+            if source in ('HBS Review', 'MIT SMR'):
+                non_academic.append(article)
+            else:
+                academic.append(article)
+
+        return academic + non_academic
+
+    def _is_academic(self, article: Article) -> bool:
+        """判断是否为学术期刊文章"""
+        source = (article.author or '').strip()
+        return source not in ('HBS Review', 'MIT SMR')
 
     def _render_template(self, date_str: str, articles: List[Article]) -> str:
         """简单的模板渲染"""
@@ -190,30 +236,25 @@ class HTMLGenerator:
 
         # Generate articles HTML
         articles_html = ""
-        for i, article in enumerate(articles, 1):
-            # Build meta line
-            meta_parts = []
-            if article.author:
-                meta_parts.append(self._escape_html(article.author))
-            meta_parts.append(f'<a href="{article.url}" target="_blank">查看原文</a>')
-            meta_line = ' | '.join(meta_parts)
 
-            # Build summary section
-            if article.summary:
-                processed_summary = self._process_summary(article.summary)
-                summary_html = f'<div class="summary-section"><div class="summary-content">{processed_summary}</div></div>'
-            else:
-                summary_html = '<div class="summary-section"><div class="summary-content error-message">摘要生成中或失败，请稍后查看</div></div>'
+        # 学术期刊部分
+        academic_articles = [a for a in articles if self._is_academic(a)]
+        non_academic_articles = [a for a in articles if not self._is_academic(a)]
 
-            article_html = f"""<div class="article">
-                <h2 class="article-title">
-                    <a href="{article.url}" target="_blank">{i}. {self._escape_html(article.title)}</a>
-                </h2>
-                <div class="article-meta">{meta_line}</div>
-                {summary_html}
-            </div>"""
+        if academic_articles:
+            full_count = sum(1 for a in academic_articles if a.content and len(a.content) >= 50)
+            minimal_count = len(academic_articles) - full_count
+            header_text = '学术期刊'
+            if minimal_count > 0:
+                header_text += f' ({full_count}篇完整 / {minimal_count}篇仅标题)'
+            articles_html += f'<div class="section-header">{header_text}</div>'
+            for i, article in enumerate(academic_articles, 1):
+                articles_html += self._render_academic_article(article, i)
 
-            articles_html += article_html
+        if non_academic_articles:
+            articles_html += '<div class="section-header" style="margin-top: 24px;">商业评论</div>'
+            for i, article in enumerate(non_academic_articles, 1):
+                articles_html += self._render_non_academic_article(article, i)
 
         # Replace articles placeholder
         start_marker = '<div class="content">'
@@ -225,6 +266,88 @@ class HTMLGenerator:
         template = template[:start_idx] + articles_html + template[end_idx:]
 
         return template
+
+    def _render_minimal_article(self, article: Article, index: int) -> str:
+        """极简渲染：只有标题和链接（用于无法获取内容的文章）"""
+        return f"""<div class="article academic minimal">
+            <h2 class="article-title">
+                <a href="{article.url}" target="_blank">{index}. {self._escape_html(article.title)}</a>
+            </h2>
+            <div class="article-meta">{self._escape_html(article.author) if article.author else ''} | <a href="{article.url}" target="_blank">查看原文</a></div>
+        </div>"""
+
+    def _render_academic_article(self, article: Article, index: int) -> str:
+        """渲染学术期刊文章：标题 -> authors -> abstract -> AI总结"""
+        # 判断是否有足够内容
+        has_content = article.content and len(article.content) >= 50
+        has_summary = article.summary and len(article.summary) > 20
+
+        # 如果既没有content也没有summary，简化为只显示标题和链接
+        if not has_content and not has_summary:
+            return self._render_minimal_article(article, index)
+
+        # 构建AI总结部分
+        summary_html = ''
+        if article.summary:
+            processed_summary = self._process_summary(article.summary)
+            summary_html = f'<div class="summary-section"><div class="summary-content">{processed_summary}</div></div>'
+
+        # Authors行
+        authors_html = ''
+        if article.authors:
+            authors_html = f'<div class="article-authors"><strong>Authors:</strong> {self._escape_html(article.authors)}</div>'
+
+        # Abstract行（原始内容，通常是英文摘要）
+        abstract_html = ''
+        if article.content and len(article.content) > 50:
+            # 取前2000字符作为abstract显示，避免过长
+            abstract_text = article.content[:2000]
+            if len(article.content) > 2000:
+                abstract_text += '...'
+            abstract_html = f'<div class="article-abstract"><strong>Abstract:</strong> <span class="abstract-text">{self._escape_html(abstract_text)}</span></div>'
+
+        # Meta行：来源 + 原文链接
+        meta_parts = []
+        if article.author:
+            meta_parts.append(self._escape_html(article.author))
+        meta_parts.append(f'<a href="{article.url}" target="_blank">查看原文</a>')
+        meta_line = ' | '.join(meta_parts)
+
+        return f"""<div class="article academic">
+            <h2 class="article-title">
+                <a href="{article.url}" target="_blank">{index}. {self._escape_html(article.title)}</a>
+            </h2>
+            <div class="article-meta">{meta_line}</div>
+            {authors_html}
+            {abstract_html}
+            {summary_html}
+        </div>"""
+
+    def _render_non_academic_article(self, article: Article, index: int) -> str:
+        """渲染非学术文章（HBS/MIT）：保持原有格式"""
+        has_summary = article.summary and len(article.summary) > 20
+
+        # Build meta line
+        meta_parts = []
+        if article.author:
+            meta_parts.append(self._escape_html(article.author))
+        meta_parts.append(f'<a href="{article.url}" target="_blank">查看原文</a>')
+        meta_line = ' | '.join(meta_parts)
+
+        # Build summary section
+        if has_summary:
+            processed_summary = self._process_summary(article.summary)
+            summary_html = f'<div class="summary-section"><div class="summary-content">{processed_summary}</div></div>'
+        else:
+            summary_html = ''
+
+        return f"""<div class="article non-academic">
+            <h2 class="article-title">
+                <a href="{article.url}" target="_blank">{index}. {self._escape_html(article.title)}</a>
+            </h2>
+            <div class="article-meta">{meta_line}</div>
+            {summary_html}
+        </div>"""
 
     def _process_summary(self, summary: str) -> str:
         """处理摘要内容，转换markdown标记"""
@@ -283,13 +406,15 @@ if __name__ == '__main__':
     else:
         config = {'output': {'dir': 'output'}}
 
-    # Test articles
+    # Test articles with mixed sources
     test_articles = [
         Article(
             title="Deep Learning for NLP: A Comprehensive Survey",
             url="https://example.com/paper1",
             time="2024-01-15",
-            author="Zhang et al.",
+            author="JFE",
+            authors="Zhang, Y., Wang, X., Li, M.",
+            content="This paper provides a comprehensive survey of deep learning approaches for natural language processing. We cover various architectures including Transformers, RNNs, and CNNs applied to NLP tasks.",
             summary="""## 研究问题
 本文系统性地回顾了深度学习在自然语言处理领域的应用和发展。
 
@@ -299,30 +424,52 @@ if __name__ == '__main__':
 ## 主要发现
 • Transformer架构已成为主流
 • 预训练模型显著提升性能
-• 大语言模型展现涌现能力
+• 大语言模型展现涌现能力"""
+        ),
+        Article(
+            title="How to Move from AI Experimentation to AI Transformation",
+            url="https://hbr.org/article",
+            time="2024-01-15",
+            author="HBS Review",
+            authors="",
+            content="",
+            summary="""## 文章概要
+本文探讨了企业如何从AI实验走向AI转型。
 
-## 贡献与启示
-为NLP研究者提供了全面的技术参考和发展趋势分析。"""
+## 主要发现
+• 需要高层支持
+• 数据基础设施是关键
+• 人才战略决定成败"""
         ),
         Article(
             title="Attention Is All You Need",
             url="https://example.com/paper2",
             time="2017-06-12",
-            author="Vaswani et al.",
+            author="ISR",
+            authors="Vaswani, A., Shazeer, N., Parmar, N.",
+            content="The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder.",
             summary="""## 研究问题
 提出一种全新的神经网络架构Transformer，完全基于注意力机制。
-
-## 研究方法
-摒弃循环和卷积，完全使用自注意力机制处理序列数据。
 
 ## 主要发现
 • 自注意力机制比RNN更高效
 • 可以更好地建模长距离依赖
-• 在机器翻译任务上取得SOTA结果
+• 在机器翻译任务上取得SOTA结果"""
+        ),
+        Article(
+            title="Audit Yourself to Get More From GenAI",
+            url="https://sloanreview.mit.edu/article",
+            time="2024-01-15",
+            author="MIT SMR",
+            authors="",
+            content="",
+            summary="""## 文章概要
+本文讨论了如何通过自我审计来更好地利用生成式AI。
 
-## 贡献与启示
-Transformer架构成为现代NLP的基石，启发了GPT、BERT等后续工作。"""
-        )
+## 主要发现
+• 审计流程需要重新设计
+• 人机协作是关键"""
+        ),
     ]
 
     generator = HTMLGenerator(config)

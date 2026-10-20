@@ -18,7 +18,8 @@ class Article:
     title: str
     url: str
     time: str = ""
-    author: str = ""
+    author: str = ""  # RSS来源标识 (JFE, ISR, HBS Review, MIT SMR 等)
+    authors: str = ""  # 论文作者列表（从文章页面/API获取）
     content: str = ""  # 浏览器获取的原始内容
     summary: str = ""  # AI生成的摘要
 

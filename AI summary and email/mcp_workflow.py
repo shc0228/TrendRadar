@@ -12,7 +12,8 @@ from pathlib import Path
 from typing import Dict, List
 
 import yaml
-from openai import OpenAI
+from anthropic import Anthropic
+from dotenv import load_dotenv
 
 # Import local modules
 from modules.html_parser import HTMLParser, Article
@@ -41,6 +42,32 @@ class ArticleFetcherMCP:
             const titleElem = document.querySelector('h1, .title-text, [class*="title"]');
             results.title = titleElem ? titleElem.innerText.trim() : document.title;
 
+            // 获取作者
+            let authors = '';
+            const authorSelectors = [
+                '.authors .author-name',
+                '.author-list .author',
+                '.c-article-author-list__item',
+                '.contrib-author',
+                '.author-name'
+            ];
+            for (const sel of authorSelectors) {
+                try {
+                    const elems = document.querySelectorAll(sel);
+                    if (elems.length > 0) {
+                        const names = [];
+                        elems.forEach(e => {
+                            const text = e.innerText.trim();
+                            if (text && text.length > 1 && !names.includes(text)) names.push(text);
+                        });
+                        if (names.length > 0) {
+                            authors = names.slice(0, 10).join(', ');
+                            break;
+                        }
+                    }
+                } catch(e) {}
+            }
+
             // 获取摘要
             let abstract = '';
 
@@ -62,9 +89,7 @@ class ArticleFetcherMCP:
             if (!abstract) {
                 const selectors = [
                     '[class*="abstract"] p',
-                    '#abstract p',
-                    'h2:contains("Abstract") + p',
-                    'h3:contains("Abstract") + p'
+                    '#abstract p'
                 ];
                 for (const sel of selectors) {
                     try {
@@ -86,6 +111,7 @@ class ArticleFetcherMCP:
                 }
             }
 
+            results.authors = authors;
             results.abstract = abstract;
             results.url = window.location.href;
             results.hasContent = abstract.length > 50;
@@ -116,15 +142,15 @@ class AISummarizer:
         self.config = config
         ai_config = config.get('ai', {})
 
-        api_key = ai_config.get('api_key') or os.getenv('DASHSCOPE_API_KEY')
+        api_key = ai_config.get('api_key') or os.getenv('KIMI_API_KEY')
         if not api_key:
-            raise ValueError("未设置DASHSCOPE_API_KEY")
+            raise ValueError("未设置KIMI_API_KEY")
 
-        self.client = OpenAI(
+        self.client = Anthropic(
             api_key=api_key,
-            base_url=ai_config.get('api_base', 'https://dashscope.aliyuncs.com/compatible-mode/v1')
+            base_url=ai_config.get('api_base', 'https://api.kimi.com/coding/')
         )
-        self.model = ai_config.get('model', 'qwen-max')
+        self.model = ai_config.get('model', 'kimi-k3')
 
     async def summarize_articles(self, articles: List[Article]) -> List[Article]:
         """批量生成文章摘要"""
@@ -153,18 +179,21 @@ class AISummarizer:
 （描述文章的理论/实践贡献和对未来研究的启示）
 """
 
-                response = self.client.chat.completions.create(
+                response = self.client.messages.create(
                     model=self.model,
+                    system="你是一个学术研究助手，擅长分析学术论文并提取关键信息。",
                     messages=[
-                        {"role": "system", "content": "你是一个学术研究助手，擅长分析学术论文并提取关键信息。"},
                         {"role": "user", "content": prompt}
                     ],
                     temperature=self.config['ai'].get('temperature', 0.7),
-                    max_tokens=self.config['ai'].get('max_tokens', 2000),
+                    max_tokens=self.config['ai'].get('max_tokens', 8192),
                     timeout=self.config['ai'].get('timeout', 120)
                 )
 
-                article.summary = response.choices[0].message.content
+                # kimi-k3默认开启thinking，content含thinking和text两种块，只取text
+                article.summary = "".join(
+                    block.text for block in response.content if block.type == "text"
+                ).strip()
                 print(f"  [{i}/{len(articles)}] ✓ 摘要完成")
 
             except Exception as e:
@@ -176,13 +205,13 @@ class AISummarizer:
         return articles
 
 
-async def process_articles_from_html(html_file: str, mcp_fetched_contents: Dict[str, str], config: Dict):
+async def process_articles_from_html(html_file: str, mcp_fetched_contents: Dict[str, Dict], config: Dict):
     """
     处理HTML文件中的文章
 
     Args:
         html_file: HTML文件路径
-        mcp_fetched_contents: 通过MCP获取的内容字典 {url: content}
+        mcp_fetched_contents: 通过MCP获取的内容字典 {url: {'content': str, 'authors': str}}
         config: 配置字典
     """
     print(f"\n{'='*60}")
@@ -200,7 +229,13 @@ async def process_articles_from_html(html_file: str, mcp_fetched_contents: Dict[
     # 2. 关联MCP获取的内容
     for article in articles:
         if article.url in mcp_fetched_contents:
-            article.content = mcp_fetched_contents[article.url]
+            data = mcp_fetched_contents[article.url]
+            if isinstance(data, dict):
+                article.content = data.get('content', '')
+                article.authors = data.get('authors', '')
+            else:
+                article.content = data
+                article.authors = ''
 
     # 3. 生成AI摘要
     summarizer = AISummarizer(config)
@@ -309,8 +344,9 @@ def main():
         config = yaml.safe_load(f)
 
     # 设置API key
+    load_dotenv(Path(__file__).parent / '.env')
     if config.get('ai', {}).get('api_key'):
-        os.environ['DASHSCOPE_API_KEY'] = config['ai']['api_key']
+        os.environ['KIMI_API_KEY'] = config['ai']['api_key']
 
     print("\n配置已加载。请按照上述说明使用MCP工具获取文章内容。")
 

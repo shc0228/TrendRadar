@@ -4,14 +4,19 @@ Elsevier/ScienceDirect API客户端
 需要API Key，建议同时申请TDM License用于非商业研究。
 API文档: https://api.elsevier.com/
 """
+import os
 import re
+from pathlib import Path
 from typing import Dict, Optional
 from urllib.parse import urlencode, urlparse
 
 import requests
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 
 from .api_client import APIClient, APIError
+
+load_dotenv(Path(__file__).parent.parent / '.env')
 
 
 class ElsevierAPIClient(APIClient):
@@ -43,7 +48,7 @@ class ElsevierAPIClient(APIClient):
     def __init__(self, config: Dict):
         elsevier_config = config.get('elsavier', {})
         super().__init__(elsevier_config)
-        self.api_key = elsevier_config.get('api_key', '')
+        self.api_key = elsevier_config.get('api_key', '') or os.getenv('ELSEVIER_API_KEY', '')
         self.tdm_license = elsevier_config.get('tdm_license', '')
         self.inst_token = elsevier_config.get('inst_token', '')
 
@@ -155,12 +160,13 @@ class ElsevierAPIClient(APIClient):
 
             # Elsevier API返回JSON
             data = response.json()
-            content = self._extract_abstract_from_response(data)
+            content, authors = self._extract_abstract_and_authors(data)
 
             if content:
                 return {
                     'success': True,
                     'content': content,
+                    'authors': authors,
                     'source': 'elsevier_api',
                     'api_name': 'Elsevier ScienceDirect API'
                 }
@@ -168,6 +174,7 @@ class ElsevierAPIClient(APIClient):
             return {
                 'success': False,
                 'content': '',
+                'authors': '',
                 'source': 'elsevier_api',
                 'error': 'API返回数据中未找到摘要'
             }
@@ -196,12 +203,13 @@ class ElsevierAPIClient(APIClient):
             response.raise_for_status()
 
             data = response.json()
-            content = self._extract_abstract_from_scopus(data)
+            content, authors = self._extract_abstract_and_authors_from_scopus(data)
 
             if content:
                 return {
                     'success': True,
                     'content': content,
+                    'authors': authors,
                     'source': 'elsevier_api',
                     'api_name': 'Elsevier Scopus API'
                 }
@@ -209,6 +217,7 @@ class ElsevierAPIClient(APIClient):
             return {
                 'success': False,
                 'content': '',
+                'authors': '',
                 'source': 'elsevier_api',
                 'error': 'Scopus API返回数据中未找到摘要'
             }
@@ -249,58 +258,73 @@ class ElsevierAPIClient(APIClient):
 
         return None
 
-    def _extract_abstract_from_response(self, data: Dict) -> str:
-        """从ScienceDirect API响应提取摘要"""
+    def _extract_abstract_and_authors(self, data: Dict) -> tuple:
+        """从ScienceDirect API响应提取摘要和作者，返回(abstract, authors)"""
         try:
-            # ScienceDirect API返回的JSON结构:
-            # { "full-text-retrieval-response": { "coredata": {...}, "originalText": ... } }
             abstract = ""
+            authors = []
 
+            coredata = None
             # 首先检查是否包装在full-text-retrieval-response中
             if 'full-text-retrieval-response' in data:
                 response_data = data['full-text-retrieval-response']
+                if 'coredata' in response_data:
+                    coredata = response_data['coredata']
+            elif 'coredata' in data:
+                coredata = data['coredata']
 
-                # 尝试不同的路径
-                if 'coredata' in response_data and 'dc:description' in response_data['coredata']:
-                    abstract = response_data['coredata']['dc:description']
-                elif 'originalText' in response_data:
-                    abstract = response_data['originalText']
-                elif 'items' in response_data:
-                    items = response_data['items']
-                    if isinstance(items, list):
-                        for item in items:
-                            if 'description' in item:
-                                desc = item['description']
-                                if isinstance(desc, str) and len(desc) > 50:
-                                    abstract = desc
-                                    break
-            else:
-                # 尝试直接从data中提取
-                if 'coredata' in data and 'dc:description' in data['coredata']:
-                    abstract = data['coredata']['dc:description']
+            # 提取摘要
+            if coredata:
+                if 'dc:description' in coredata:
+                    abstract = coredata['dc:description']
+                # 提取作者
+                creators = coredata.get('dc:creator', [])
+                if isinstance(creators, list):
+                    for creator in creators:
+                        if isinstance(creator, dict) and '$' in creator:
+                            authors.append(creator['$'])
+                        elif isinstance(creator, str):
+                            authors.append(creator)
+                elif isinstance(creators, dict) and '$' in creators:
+                    authors.append(creators['$'])
+                elif isinstance(creators, str):
+                    authors.append(creators)
+
+            # 如果coredata没有摘要，尝试其他路径
+            if not abstract:
+                if 'full-text-retrieval-response' in data:
+                    response_data = data['full-text-retrieval-response']
+                    if 'originalText' in response_data:
+                        abstract = response_data['originalText']
+                    elif 'items' in response_data:
+                        items = response_data['items']
+                        if isinstance(items, list):
+                            for item in items:
+                                if 'description' in item:
+                                    desc = item['description']
+                                    if isinstance(desc, str) and len(desc) > 50:
+                                        abstract = desc
+                                        break
                 elif 'originalText' in data:
                     abstract = data['originalText']
-                elif 'items' in data:
-                    items = data['items']
-                    if isinstance(items, list):
-                        for item in items:
-                            if 'description' in item:
-                                desc = item['description']
-                                if isinstance(desc, str) and len(desc) > 50:
-                                    abstract = desc
-                                    break
 
             if isinstance(abstract, str):
-                return abstract.strip()
+                abstract = abstract.strip()
+            else:
+                abstract = ""
 
-            return ""
+            authors_str = ', '.join(authors[:10]) if authors else ''
+            return abstract, authors_str
 
         except (KeyError, TypeError):
-            return ""
+            return "", ""
 
-    def _extract_abstract_from_scopus(self, data: Dict) -> str:
-        """从Scopus API响应提取摘要"""
+    def _extract_abstract_and_authors_from_scopus(self, data: Dict) -> tuple:
+        """从Scopus API响应提取摘要和作者，返回(abstract, authors)"""
         try:
+            abstract = ""
+            authors = []
+
             # Scopus API返回的JSON结构
             if 'abstracts-retrieval-response' in data:
                 response_data = data['abstracts-retrieval-response']
@@ -308,8 +332,6 @@ class ElsevierAPIClient(APIClient):
                 # 摘要在item中
                 if 'item' in response_data:
                     items = response_data['item']
-
-                    # 可能是单个item或数组
                     if isinstance(items, dict):
                         items = [items]
 
@@ -317,7 +339,7 @@ class ElsevierAPIClient(APIClient):
                         if 'description' in item:
                             desc = item['description']
                             if isinstance(desc, str) and len(desc) > 50:
-                                return desc.strip()
+                                abstract = desc.strip()
 
                         # 检查bibrecord
                         if 'bibrecord' in item:
@@ -325,21 +347,43 @@ class ElsevierAPIClient(APIClient):
                             if 'head' in bibrecord:
                                 head = bibrecord['head']
                                 if 'abstracts' in head:
-                                    abstracts = head['abstracts']
-                                    if isinstance(abstracts, dict):
-                                        abstracts = [abstracts]
-                                    for abstract_block in abstracts:
+                                    abstracts_list = head['abstracts']
+                                    if isinstance(abstracts_list, dict):
+                                        abstracts_list = [abstracts_list]
+                                    for abstract_block in abstracts_list:
                                         if 'abstract' in abstract_block:
                                             abstract_text = abstract_block['abstract']
                                             if isinstance(abstract_text, str):
-                                                return abstract_text.strip()
+                                                abstract = abstract_text.strip()
                                             elif isinstance(abstract_text, dict) and '$' in abstract_text:
-                                                return abstract_text['$'].strip()
+                                                abstract = abstract_text['$'].strip()
 
-            return ""
+                                # 提取作者
+                                if 'author-group' in head:
+                                    author_groups = head['author-group']
+                                    if isinstance(author_groups, dict):
+                                        author_groups = [author_groups]
+                                    for group in author_groups:
+                                        if 'author' in group:
+                                            a_list = group['author']
+                                            if isinstance(a_list, dict):
+                                                a_list = [a_list]
+                                            for a in a_list:
+                                                if isinstance(a, dict):
+                                                    given = a.get('given-name', '')
+                                                    surname = a.get('surname', '')
+                                                    if given and surname:
+                                                        authors.append(f"{given} {surname}")
+                                                    elif surname:
+                                                        authors.append(surname)
+                                                elif isinstance(a, str):
+                                                    authors.append(a)
+
+            authors_str = ', '.join(authors[:10]) if authors else ''
+            return abstract, authors_str
 
         except (KeyError, TypeError):
-            return ""
+            return "", ""
 
 
 # 测试

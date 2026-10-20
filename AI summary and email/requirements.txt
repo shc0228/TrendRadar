@@ -11,8 +11,11 @@ playwright>=1.40.0
 # Chrome DevTools MCP (已安装，用于参考)
 # mcp>=1.0.0
 
-# AI模型 - OpenAI兼容API
-openai>=1.0.0
+# AI模型 - Kimi (Anthropic兼容端点)
+anthropic>=0.99.0
+
+# 本地密钥加载
+python-dotenv>=1.0.0
 
 # 文件监控
 watchdog>=4.0.0

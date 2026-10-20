@@ -40,6 +40,7 @@ class APIClient(ABC):
             {
                 'success': bool,
                 'content': str,
+                'authors': str,    # 作者列表（逗号分隔）
                 'source': 'api',  # 标识来源
                 'api_name': str,   # API名称
                 'error': str

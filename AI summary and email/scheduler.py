@@ -68,6 +68,7 @@ async def process_file(file_path: str, config: dict):
 
         if result['success']:
             article.content = result['content']
+            article.authors = result.get('authors', '')
             source = result.get('source', 'unknown')
             api_name = result.get('api_name', '')
             print(f"   Success! Source: {source}", end='')
@@ -76,9 +77,12 @@ async def process_file(file_path: str, config: dict):
             else:
                 print()
             print(f"   Content length: {len(result['content'])} chars")
+            if article.authors:
+                print(f"   Authors: {article.authors[:80]}")
             success_count += 1
         else:
             article.content = ""
+            article.authors = ""
             error = result.get('error', 'Unknown error')
             print(f"   Failed: {error[:80]}")
             fail_count += 1
@@ -193,7 +197,7 @@ def process_daily_files():
     # 设置AI API密钥
     ai_api_key = config.get('ai', {}).get('api_key', '')
     if ai_api_key:
-        os.environ['DASHSCOPE_API_KEY'] = ai_api_key
+        os.environ['KIMI_API_KEY'] = ai_api_key
 
     watch_dir = Path(config['monitor']['watch_dir'])
 

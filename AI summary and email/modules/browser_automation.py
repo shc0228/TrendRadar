@@ -104,6 +104,7 @@ class BrowserAutomation:
                 return {
                     'success': True,
                     'content': api_result['content'],
+                    'authors': api_result.get('authors', ''),
                     'error': '',
                     'source': 'api',
                     'api_name': api_result.get('api_name', 'Unknown')
@@ -111,7 +112,8 @@ class BrowserAutomation:
 
         # 2. 检查是否需要Playwright (INFORMS等)
         if self.playwright_manager and self.playwright_manager.can_handle(url):
-            return await self.playwright_manager.get_article_content(url)
+            pw_result = await self.playwright_manager.get_article_content(url)
+            return pw_result
 
         # 3. 检查是否需要MCP
         if self._needs_mcp(url):
@@ -177,6 +179,7 @@ class BrowserAutomation:
                             return {
                                 'success': True,
                                 'content': result['content'],
+                                'authors': result.get('authors', ''),
                                 'error': '',
                                 'mcp_mode': True
                             }
@@ -189,6 +192,7 @@ class BrowserAutomation:
         return {
             'success': False,
             'content': '',
+            'authors': '',
             'error': 'MCP_QUEUE: URL已加入MCP处理队列，请在Claude Code中执行MCP工具',
             'mcp_mode': True
         }
@@ -223,6 +227,33 @@ class BrowserAutomation:
     // 获取标题
     const titleElem = document.querySelector('h1, .title-text, [class*="title"]');
     results.title = titleElem ? titleElem.innerText.trim() : document.title;
+
+    // 获取作者
+    let authors = '';
+    const authorSelectors = [
+        '.authors .author-name',
+        '.author-list .author',
+        '.c-article-author-list__item',
+        '[class*="author"] a',
+        '.contrib-author',
+        '.author-name'
+    ];
+    for (const sel of authorSelectors) {
+        try {
+            const elems = document.querySelectorAll(sel);
+            if (elems.length > 0) {
+                const names = [];
+                elems.forEach(e => {
+                    const text = e.innerText.trim();
+                    if (text && text.length > 1 && !names.includes(text)) names.push(text);
+                });
+                if (names.length > 0) {
+                    authors = names.slice(0, 10).join(', ');
+                    break;
+                }
+            }
+        } catch(e) {}
+    }
 
     // 获取摘要 - INFORMS
     let abstract = '';
@@ -267,6 +298,7 @@ class BrowserAutomation:
     }
 
     results.abstract = abstract;
+    results.authors = authors;
     results.url = window.location.href;
     results.hasContent = abstract.length > 50;
 
@@ -283,7 +315,10 @@ class BrowserAutomation:
             )
 
             if response.status_code == 403:
-                # 降级到MCP模式
+                # 403时，先检查Playwright是否能处理（Cloudflare防护的网站）
+                if self.playwright_manager and self.playwright_manager.can_handle(url):
+                    return await self.playwright_manager.get_article_content(url)
+                # 否则降级到MCP模式
                 return await self._get_via_mcp(url)
 
             response.raise_for_status()
@@ -291,11 +326,13 @@ class BrowserAutomation:
 
             soup = BeautifulSoup(response.text, 'html.parser')
             content = self._extract_content(soup, url)
+            authors = self._extract_authors(soup, url)
 
             if content and len(content) > 50:
                 return {
                     'success': True,
                     'content': content,
+                    'authors': authors,
                     'error': '',
                     'mcp_mode': False
                 }
@@ -303,6 +340,7 @@ class BrowserAutomation:
                 return {
                     'success': False,
                     'content': '',
+                    'authors': authors,
                     'error': '提取内容为空或过短',
                     'mcp_mode': False
                 }
@@ -311,6 +349,7 @@ class BrowserAutomation:
             return {
                 'success': False,
                 'content': '',
+                'authors': '',
                 'error': f'网络请求失败: {str(e)}',
                 'mcp_mode': False
             }
@@ -351,6 +390,22 @@ class BrowserAutomation:
 
     def _try_abstract_sections(self, soup: BeautifulSoup, url: str) -> str:
         """尝试获取摘要部分"""
+        domain = urlparse(url).netloc.lower()
+
+        # 域名特定选择器
+        if 'wiley.com' in domain:
+            wiley_selectors = [
+                '.article-section__content',
+                '.abstract-group',
+                '[class*="abstract"] .paragraph--first',
+            ]
+            for selector in wiley_selectors:
+                elem = soup.select_one(selector)
+                if elem:
+                    text = elem.get_text(separator=' ', strip=True)
+                    if len(text) > 50:
+                        return text
+
         abstract_selectors = [
             '.abstract',
             '#abstract',
@@ -444,6 +499,90 @@ class BrowserAutomation:
             script.decompose()
         text = soup.get_text(separator='\n', strip=True)
         return self._clean_text(text)
+
+    def _extract_authors(self, soup: BeautifulSoup, url: str) -> str:
+        """从页面提取作者信息"""
+        domain = urlparse(url).netloc.lower()
+
+        # 域名特定的作者选择器
+        domain_selectors = {
+            'hbr.org': [
+                '.contributor-name',
+                '.author-name',
+                '[class*="author"]'
+            ],
+            'sloanreview.mit.edu': [
+                '.author-name',
+                '.contributor',
+                '[class*="author"]'
+            ],
+            'sciencedirect.com': [
+                '.authors .author',
+                '#author-group .author',
+                '.author-list .author'
+            ],
+            'pubsonline.informs.org': [
+                '.authors .contributor',
+                '.author-name',
+                '.contrib-author'
+            ],
+            'springer.com': [
+                '.authors__name',
+                '.c-article-author-list__item',
+                '.author-name'
+            ],
+            'wiley.com': [
+                '.accordion-tabbed__tab-mobile .accordion-tabbed__content p',
+                '.article-header__authors .author-name',
+                '.author-name'
+            ],
+        }
+
+        # 通用作者选择器
+        generic_selectors = [
+            '.authors .author',
+            '.author-list .author',
+            '.c-article-author-list__item',
+            '.author-name',
+            '.contrib-author',
+            '[class*="author"] a',
+            'meta[name="citation_author"]',
+        ]
+
+        # 先尝试域名特定选择器
+        selectors = []
+        for key, val in domain_selectors.items():
+            if key in domain:
+                selectors = val
+                break
+
+        if not selectors:
+            selectors = generic_selectors
+
+        authors = []
+
+        # 先尝试meta标签
+        for meta in soup.find_all('meta', attrs={'name': 'citation_author'}):
+            name = meta.get('content', '').strip()
+            if name and name not in authors:
+                authors.append(name)
+
+        if authors:
+            return ', '.join(authors[:10])
+
+        # 再尝试CSS选择器
+        for selector in selectors:
+            elems = soup.select(selector)
+            for elem in elems:
+                text = elem.get_text(strip=True)
+                if text and len(text) > 1 and len(text) < 100 and text not in authors:
+                    # 过滤掉包含数字或明显不是人名的文本
+                    if not re.search(r'\d', text) and not any(kw in text.lower() for kw in ['editor', 'review', 'download', 'citation', 'abstract']):
+                        authors.append(text)
+            if authors:
+                break
+
+        return ', '.join(authors[:10]) if authors else ''
 
     def _clean_text(self, text: str) -> str:
         """清理文本"""

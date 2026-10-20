@@ -99,9 +99,11 @@ class SummaryProcessor:
                 result = await self.browser.get_article_content(article.url)
                 if result['success']:
                     article.content = result['content']
+                    article.authors = result.get('authors', '')
                     print(f"      ✓ 获取内容 ({len(result['content'])} 字符)")
                 else:
                     article.content = ""
+                    article.authors = ""
                     print(f"      ✗ 获取失败: {result['error']}")
 
                 # 避免请求过快
@@ -225,7 +227,7 @@ def main():
     # 设置环境变量
     ai_api_key = config.get('ai', {}).get('api_key', '')
     if ai_api_key:
-        os.environ['DASHSCOPE_API_KEY'] = ai_api_key
+        os.environ['KIMI_API_KEY'] = ai_api_key
 
     # 创建处理器
     processor = SummaryProcessor(config)

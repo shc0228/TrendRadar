@@ -1,12 +1,18 @@
 """
 发送邮件通知
 """
+import os
 import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
+from pathlib import Path
 from typing import Dict
+
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).parent.parent / '.env')
 
 
 class EmailSender:
@@ -14,6 +20,7 @@ class EmailSender:
 
     def __init__(self, config: Dict):
         self.config = config.get('email', {})
+        self.password = self.config.get('password') or os.getenv('SMTP_PASSWORD', '')
 
     def send(self, html_file_path: str, report_type: str = "AI学术摘要") -> bool:
         """发送HTML报告邮件"""
@@ -51,13 +58,13 @@ class EmailSender:
                 # 使用SSL
                 context = ssl.create_default_context()
                 with smtplib.SMTP_SSL(self.config['smtp_server'], smtp_port, context=context) as server:
-                    server.login(self.config['from'], self.config['password'])
+                    server.login(self.config['from'], self.password)
                     server.send_message(msg)
             else:
                 # 使用STARTTLS
                 with smtplib.SMTP(self.config['smtp_server'], smtp_port) as server:
                     server.starttls()
-                    server.login(self.config['from'], self.config['password'])
+                    server.login(self.config['from'], self.password)
                     server.send_message(msg)
 
             print(f"[OK] 邮件发送成功 -> {to_recipients_str}")
@@ -69,11 +76,14 @@ class EmailSender:
 
     def _validate_config(self) -> bool:
         """验证邮件配置是否完整"""
-        required_fields = ['from', 'password', 'to', 'smtp_server', 'smtp_port']
+        required_fields = ['from', 'to', 'smtp_server', 'smtp_port']
         for field in required_fields:
             if not self.config.get(field):
                 print(f"邮件配置缺少: {field}")
                 return False
+        if not self.password:
+            print("邮件配置缺少: password（请在本地.env中设置SMTP_PASSWORD）")
+            return False
         return True
 
 

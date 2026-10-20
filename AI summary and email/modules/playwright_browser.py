@@ -31,6 +31,36 @@ class PlaywrightBrowser:
         const titleElem = document.querySelector('h1, .title-text, [class*="title"], .article-title');
         results.title = titleElem ? titleElem.innerText.trim() : document.title;
 
+        // 获取作者
+        let authors = '';
+        const authorSelectors = [
+            '.authors .author-name',
+            '.author-list .author',
+            '.c-article-author-list__item',
+            '.contrib-author',
+            '.author-name',
+            // Wiley
+            '.accordion-tabbed__tab-mobile .accordion-tabbed__content p',
+            '.article-header__authors .author-name',
+            '[class*="author"] .author-name'
+        ];
+        for (const sel of authorSelectors) {
+            try {
+                const elems = document.querySelectorAll(sel);
+                if (elems.length > 0) {
+                    const names = [];
+                    elems.forEach(e => {
+                        const text = e.innerText.trim();
+                        if (text && text.length > 1 && !names.includes(text)) names.push(text);
+                    });
+                    if (names.length > 0) {
+                        authors = names.slice(0, 10).join(', ');
+                        break;
+                    }
+                }
+            } catch(e) {}
+        }
+
         // 获取摘要 - INFORMS专用
         let abstract = '';
         const informsAbstract = document.querySelector('.abstractSection p, .abstract p');
@@ -46,12 +76,21 @@ class PlaywrightBrowser:
             }
         }
 
+        // Wiley格式
+        if (!abstract || abstract.length < 50) {
+            const wileyAbstract = document.querySelector('.article-section__content p, .abstract-group p, [class*="abstract"] .paragraph--first');
+            if (wileyAbstract) {
+                abstract = wileyAbstract.innerText.trim();
+            }
+        }
+
         // 通用选择器
         if (!abstract || abstract.length < 50) {
             const selectors = [
                 '[class*="abstract"] p',
                 '#abstract p',
-                '.article-abstract p'
+                '.article-abstract p',
+                '.article-section__content p'
             ];
             for (const sel of selectors) {
                 try {
@@ -65,6 +104,7 @@ class PlaywrightBrowser:
         }
 
         results.abstract = abstract;
+        results.authors = authors;
         results.url = window.location.href;
         results.hasContent = abstract.length > 50;
 
@@ -138,11 +178,13 @@ class PlaywrightBrowser:
                     import json
                     data = json.loads(result)
                     abstract = data.get('abstract', '')
+                    authors = data.get('authors', '')
 
                     if abstract and len(abstract) > 50:
                         return {
                             'success': True,
                             'content': abstract,
+                            'authors': authors,
                             'error': '',
                             'source': 'playwright'
                         }
@@ -150,6 +192,7 @@ class PlaywrightBrowser:
                 return {
                     'success': False,
                     'content': '',
+                    'authors': '',
                     'error': '未能提取到摘要内容',
                     'source': 'playwright'
                 }
@@ -170,7 +213,8 @@ class PlaywrightManager:
     PLAYWRIGHT_DOMAINS = {
         'informs.org',
         'pubsonline.informs.org',
-        # 注意：journals.uchicago.edu (JPE)有Cloudflare Turnstile保护，Playwright无法绕过，已移至MCP模式
+        'wiley.com',  # Wiley Online Library (JCP等) - Cloudflare保护
+        'onlinelibrary.wiley.com',
     }
 
     def __init__(self, config: Dict):

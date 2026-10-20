@@ -85,12 +85,13 @@ class ArXivAPIClient:
             response.raise_for_status()
 
             # arXiv返回Atom XML格式
-            content = self._parse_arxiv_xml(response.text)
+            content, authors = self._parse_arxiv_xml(response.text)
 
             if content:
                 return {
                     'success': True,
                     'content': content,
+                    'authors': authors,
                     'source': 'arxiv_api',
                     'api_name': 'arXiv API'
                 }
@@ -98,6 +99,7 @@ class ArXivAPIClient:
             return {
                 'success': False,
                 'content': '',
+                'authors': '',
                 'source': 'arxiv_api',
                 'error': '未找到文章内容'
             }
@@ -106,6 +108,7 @@ class ArXivAPIClient:
             return {
                 'success': False,
                 'content': '',
+                'authors': '',
                 'source': 'arxiv_api',
                 'error': f'API请求失败: {str(e)}'
             }
@@ -140,8 +143,8 @@ class ArXivAPIClient:
 
         return None
 
-    def _parse_arxiv_xml(self, xml_text: str) -> str:
-        """解析arXiv API返回的XML"""
+    def _parse_arxiv_xml(self, xml_text: str) -> tuple:
+        """解析arXiv API返回的XML，返回(摘要, 作者列表)"""
         try:
             import xml.etree.ElementTree as ET
 
@@ -154,18 +157,28 @@ class ArXivAPIClient:
             entry = root.find('atom:entry', ns)
 
             if entry is None:
-                return ''
+                return '', ''
 
             # 提取摘要
             summary = entry.find('atom:summary', ns)
-            if summary is not None and summary.text:
-                return summary.text.strip()
+            abstract = summary.text.strip() if summary is not None and summary.text else ''
 
-            return ''
+            # 提取作者
+            authors = []
+            for author_elem in entry.findall('atom:author', ns):
+                name_elem = author_elem.find('atom:name', ns)
+                if name_elem is not None and name_elem.text:
+                    authors.append(name_elem.text.strip())
+
+            authors_str = ', '.join(authors) if authors else ''
+
+            return abstract, authors_str
 
         except Exception as e:
             # 回退到正则表达式提取
-            return self._extract_abstract_fallback(xml_text)
+            abstract = self._extract_abstract_fallback(xml_text)
+            authors = self._extract_authors_fallback(xml_text)
+            return abstract, authors
 
     def _extract_abstract_fallback(self, xml_text: str) -> str:
         """使用正则表达式回退提取摘要"""
@@ -178,6 +191,14 @@ class ArXivAPIClient:
             return abstract.strip()
 
         return ''
+
+    def _extract_authors_fallback(self, xml_text: str) -> str:
+        """使用正则表达式回退提取作者"""
+        authors = []
+        # 匹配 <author><name>...</name></author>
+        for match in re.finditer(r'<author[^>]*>\s*<name>([^<]+)</name>\s*</author>', xml_text):
+            authors.append(match.group(1).strip())
+        return ', '.join(authors) if authors else ''
 
     def get_article_by_id(self, arxiv_id: str) -> Dict[str, str]:
         """

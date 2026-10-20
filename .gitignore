@@ -42,3 +42,9 @@ uv.lock
 *.log
 *.bak
 docker/.env
+
+# Secrets - 仅保留在本地，禁止提交
+.env
+.env.*
+!.env.example
+AI summary and email/config.yaml

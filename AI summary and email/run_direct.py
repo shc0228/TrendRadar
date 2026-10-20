@@ -128,7 +128,7 @@ def main():
     # Set AI API key
     ai_api_key = config.get('ai', {}).get('api_key', '')
     if ai_api_key:
-        os.environ['DASHSCOPE_API_KEY'] = ai_api_key
+        os.environ['KIMI_API_KEY'] = ai_api_key
 
     # Get HTML files from watch directory
     watch_dir = Path(config['monitor']['watch_dir'])

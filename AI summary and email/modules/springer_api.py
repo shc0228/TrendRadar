@@ -85,12 +85,13 @@ class SpringerAPIClient(APIClient):
             response.raise_for_status()
 
             data = response.json()
-            content = self._extract_abstract_from_api(data)
+            content, authors = self._extract_abstract_from_api(data)
 
             if content:
                 return {
                     'success': True,
                     'content': content,
+                    'authors': authors,
                     'source': 'springer_api',
                     'api_name': 'Springer Metadata API'
                 }
@@ -98,6 +99,7 @@ class SpringerAPIClient(APIClient):
             return {
                 'success': False,
                 'content': '',
+                'authors': '',
                 'source': 'springer_api',
                 'error': 'API返回数据中未找到摘要'
             }
@@ -125,11 +127,13 @@ class SpringerAPIClient(APIClient):
 
             # 尝试多种Springer摘要选择器
             abstract = self._extract_abstract_springer(soup)
+            authors = self._extract_authors_springer(soup)
 
             if abstract and len(abstract) > 50:
                 return {
                     'success': True,
                     'content': abstract,
+                    'authors': authors,
                     'source': 'springer_api',
                     'api_name': 'Springer Open Access'
                 }
@@ -137,6 +141,7 @@ class SpringerAPIClient(APIClient):
             return {
                 'success': False,
                 'content': '',
+                'authors': '',
                 'source': 'springer_api',
                 'error': '未找到摘要内容 - 文章可能不是开放获取'
             }
@@ -167,30 +172,69 @@ class SpringerAPIClient(APIClient):
 
         return None
 
-    def _extract_abstract_from_api(self, data: Dict) -> str:
-        """从API响应中提取摘要"""
+    def _extract_abstract_from_api(self, data: Dict) -> tuple:
+        """从API响应中提取摘要和作者，返回(abstract, authors)"""
         try:
             # Springer API返回的JSON结构
             records = data.get('records', [])
 
             if not records:
-                return ''
+                return '', ''
 
             record = records[0]
             abstract = record.get('abstract', '')
 
+            # 提取作者
+            authors = []
+            creators = record.get('creators', [])
+            for creator in creators:
+                if isinstance(creator, dict):
+                    creator_name = creator.get('creator', '')
+                    if creator_name:
+                        authors.append(creator_name)
+                elif isinstance(creator, str):
+                    authors.append(creator)
+
+            authors_str = ', '.join(authors) if authors else ''
+
             if abstract:
-                return abstract.strip()
+                return abstract.strip(), authors_str
 
             # 尝试其他可能的字段
             for field in ['description', 'summary']:
                 if field in record:
-                    return record[field].strip()
+                    return record[field].strip(), authors_str
 
-            return ''
+            return '', authors_str
 
         except (KeyError, IndexError, TypeError):
-            return ''
+            return '', ''
+
+    def _extract_authors_springer(self, soup: BeautifulSoup) -> str:
+        """从Springer HTML页面提取作者"""
+        selectors = [
+            # Springer Nature
+            '.c-article-author-list__item',
+            '.authors__name',
+            '.author-name',
+            '[data-test="author-name"]',
+            # Nature
+            '.c-article-author-list__item a',
+            # 通用
+            'a[href*="author"], .author',
+        ]
+
+        authors = []
+        for selector in selectors:
+            elems = soup.select(selector)
+            for elem in elems:
+                text = elem.get_text(strip=True)
+                if text and len(text) > 2 and text not in authors:
+                    authors.append(text)
+            if authors:
+                break
+
+        return ', '.join(authors[:10]) if authors else ''  # 最多取10个作者
 
     def _extract_abstract_springer(self, soup: BeautifulSoup) -> str:
         """从Springer HTML页面提取摘要"""
